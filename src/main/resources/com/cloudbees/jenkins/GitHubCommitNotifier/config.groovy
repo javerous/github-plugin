@@ -14,6 +14,10 @@ f.advanced() {
         f.property()
     }
     
+    f.entry(title: _('Target URL'), field: 'targetURL') {
+        f.textbox()
+    }
+    
     f.entry(title: _('Result on failure'), field: 'resultOnFailure') {
         f.select()
     }

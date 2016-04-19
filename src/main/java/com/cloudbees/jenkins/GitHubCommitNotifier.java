@@ -50,6 +50,7 @@ public class GitHubCommitNotifier extends Notifier implements SimpleBuildStep {
     private static final ExpandableMessage DEFAULT_MESSAGE = new ExpandableMessage("");
 
     private ExpandableMessage statusMessage = DEFAULT_MESSAGE;
+    private String targetURL = "$BUILD_URL";
 
     private final String resultOnFailure;
     private static final Result[] SUPPORTED_RESULTS = {FAILURE, UNSTABLE, SUCCESS};
@@ -83,6 +84,20 @@ public class GitHubCommitNotifier extends Notifier implements SimpleBuildStep {
     public void setStatusMessage(ExpandableMessage statusMessage) {
         this.statusMessage = statusMessage;
     }
+
+
+    /**
+     * @since javerous
+     */
+    public String getTargetURL() {
+        return targetURL;
+    }
+
+    @DataBoundSetter
+    public void setTargetURL(String targetURL) {
+        this.targetURL = targetURL;
+    }
+
 
     /**
      * @since 1.10
@@ -134,8 +149,13 @@ public class GitHubCommitNotifier extends Notifier implements SimpleBuildStep {
         StatusResult status = statusFrom(build);
         String message = defaultIfEmpty(firstNonNull(statusMessage, DEFAULT_MESSAGE)
                 .expandAll(build, listener), status.getMsg());
+        String url = defaultIfEmpty(new ExpandableMessage(firstNonNull(targetURL, "$BUILD_URL"))
+                .expandAll(build, listener), build.getAbsoluteUrl());
         String contextName = displayNameFor(build.getParent());
 
+        listener.getLogger().println(
+                format("[GitHub Commit Notifier] Using target URL '%s'", url)
+        );
         for (GitHubRepositoryName name : GitHubRepositoryNameContributor.parseAssociatedNames(build.getParent())) {
             for (GHRepository repository : name.resolve()) {
 
@@ -145,7 +165,9 @@ public class GitHubCommitNotifier extends Notifier implements SimpleBuildStep {
 
                 try {
                     repository.createCommitStatus(
-                            sha1, status.getState(), build.getAbsoluteUrl(),
+                            sha1,
+                            status.getState(),
+                            url,
                             message,
                             contextName
                     );
